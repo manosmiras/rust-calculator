@@ -14,13 +14,13 @@ fn main() -> eframe::Result<()> {
                 // NOTE: Adding an icon is optional
                 eframe::icon_data::from_png_bytes(&include_bytes!("../assets/icon-256.png")[..])
                     .expect("Failed to load icon"),
-            ),
+            ).with_resizable(true),
         ..Default::default()
     };
     eframe::run_native(
-        "eframe template",
+        "rust calculator",
         native_options,
-        Box::new(|cc| Box::new(eframe_template::TemplateApp::new(cc))),
+        Box::new(|cc| Box::new(rust_calculator::Calculator::new(cc))),
     )
 }
 
@@ -37,7 +37,7 @@ fn main() {
             .start(
                 "the_canvas_id", // hardcode it
                 web_options,
-                Box::new(|cc| Box::new(eframe_template::TemplateApp::new(cc))),
+                Box::new(|cc| Box::new(rust_calculator::Calculator::new(cc))),
             )
             .await
             .expect("failed to start eframe");

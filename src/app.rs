@@ -1,25 +1,49 @@
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct TemplateApp {
-    // Example stuff:
-    label: String,
+use std::fmt::{Display, Formatter};
 
-    #[serde(skip)] // This how you opt-out of serialization of a field
-    value: f32,
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Operation {
+    Add,
+    Append,
+    Subtract,
+    Multiply,
+    Divide,
+    Square,
+    SquareRoot,
+    Negate,
+    Equal,
+    Decimal,
+    None,
 }
 
-impl Default for TemplateApp {
+impl Display for Operation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+/// We derive Deserialize/Serialize so we can persist app state on shutdown.
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
+#[serde(default)] // if we add new fields, give them default values when deserializing old state
+pub struct Calculator {
+    #[serde(skip)]
+    total: f64,
+    #[serde(skip)]
+    current: f64,
+    #[serde(skip)]
+    operation_history: Vec<Operation>,
+}
+
+impl Default for Calculator {
     fn default() -> Self {
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
+            total: 0.0,
+            current: 0.0,
+            operation_history: Vec::new(),
         }
     }
 }
 
-impl TemplateApp {
+impl Calculator {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
@@ -33,9 +57,93 @@ impl TemplateApp {
 
         Default::default()
     }
+
+    pub fn operate(&mut self, operation: Operation, rhs: Option<f64>) {
+        match operation {
+            Operation::Add => {
+                self.total = self.total + rhs.unwrap();
+                self.current = 0.0;
+            }
+            Operation::Append => {
+                let previous_operation = self.operation_history.clone().pop();
+                match previous_operation {
+                    None => {
+                        let appended_numbers = self.current.to_string() + &*rhs.unwrap().to_string();
+                        self.current = appended_numbers.parse().unwrap();
+                    }
+                    Some(previous_operation) => {
+                        if previous_operation == Operation::Decimal && self.current.fract() == 0.0 {
+                            let appended_numbers = self.current.to_string() + "." + &*rhs.unwrap().to_string();
+                            self.current = appended_numbers.parse().unwrap();
+                        } else {
+                            let appended_numbers = self.current.to_string() + &*rhs.unwrap().to_string();
+                            self.current = appended_numbers.parse().unwrap();
+                        }
+                    }
+                }
+            }
+            Operation::Subtract => {
+                if self.total == 0.0 {
+                    self.total = rhs.unwrap();
+                } else {
+                    self.total = self.total - rhs.unwrap();
+                }
+                self.current = 0.0;
+            }
+            Operation::Multiply => {
+                if self.total == 0.0 {
+                    self.total = rhs.unwrap();
+                } else {
+                    self.total = self.total * rhs.unwrap();
+                }
+                self.current = 0.0;
+            }
+            Operation::Divide => {
+                if self.total == 0.0 {
+                    self.total = rhs.unwrap();
+                } else {
+                    self.total = self.total / rhs.unwrap();
+                }
+                self.current = 0.0;
+            }
+            Operation::Square => {
+                self.total = rhs.unwrap().powf(2.0);
+                self.current = 0.0;
+            }
+            Operation::SquareRoot => {
+                self.total = rhs.unwrap().sqrt();
+                self.current = 0.0;
+            }
+            Operation::Negate => {
+                self.current = self.current * -1.0;
+            }
+            Operation::Equal => {
+                let previous_operation = self.find_last_operation_excluding(vec![Operation::Equal, Operation::Append, Operation::Decimal]);
+                match previous_operation {
+                    None => {}
+                    Some(previous_operation) => {
+                        self.operate(previous_operation, self.current.into());
+                    }
+                }
+            }
+            _ => {}
+        }
+        self.operation_history.push(operation);
+    }
+
+    pub fn find_last_operation_excluding(&self, excluded_operations: Vec<Operation>) -> Option<Operation> {
+        let cloned_operation_history = self.operation_history.clone();
+        for operation in cloned_operation_history.iter().rev() {
+            if excluded_operations.contains(operation) {
+                continue
+            }
+            return Some(operation.clone());
+        }
+        None
+    }
 }
 
-impl eframe::App for TemplateApp {
+impl eframe::App for Calculator {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -45,65 +153,110 @@ impl eframe::App for TemplateApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
-
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-
-            egui::menu::bar(ui, |ui| {
-                // NOTE: no File->Quit on web pages!
-                let is_web = cfg!(target_arch = "wasm32");
-                if !is_web {
-                    ui.menu_button("File", |ui| {
-                        if ui.button("Quit").clicked() {
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
-                    });
-                    ui.add_space(16.0);
-                }
-
-                egui::widgets::global_dark_light_mode_buttons(ui);
-            });
-        });
-
         egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-            ui.heading("eframe template");
+            /*ui.horizontal(|ui| {
+                let previous_operation = self.operation_history.pop().unwrap();
+                ui.label(previous_operation.to_string());
+            });*/
 
             ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(&mut self.label);
+                ui.label(self.total.to_string());
             });
 
-            ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                self.value += 1.0;
-            }
+            ui.horizontal(|ui| {
+                ui.label(self.current.to_string());
+            });
 
-            ui.separator();
+            ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                let button_width = calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
+                let button_height = 0.0;
+                if ui.add_sized([button_width, button_height], egui::Button::new("C")).clicked() {
+                    self.current = 0.0;
+                    self.total = 0.0;
+                    //self.previous_operation = Operation::None;
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("sqrt")).clicked() {
+                    self.operate(Operation::SquareRoot, self.current.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("pow")).clicked() {
+                    self.operate(Operation::Square, self.current.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("/")).clicked() {
+                    self.operate(Operation::Divide, self.current.into());
+                }
+            });
 
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/eframe_template/blob/main/",
-                "Source code."
-            ));
+            ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                let button_width = calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
+                let button_height = 0.0;
+                if ui.add_sized([button_width, button_height], egui::Button::new("7")).clicked() {
+                    self.operate(Operation::Append, 7.0.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("8")).clicked() {
+                    self.operate(Operation::Append, 8.0.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("9")).clicked() {
+                    self.operate(Operation::Append, 9.0.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("x")).clicked() {
+                    self.operate(Operation::Multiply, self.current.into());
+                }
+            });
 
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                powered_by_egui_and_eframe(ui);
-                egui::warn_if_debug_build(ui);
+            ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                let button_width = calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
+                let button_height = 0.0;
+                if ui.add_sized([button_width, button_height], egui::Button::new("4")).clicked() {
+                    self.operate(Operation::Append, 4.0.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("5")).clicked() {
+                    self.operate(Operation::Append, 5.0.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("6")).clicked() {
+                    self.operate(Operation::Append, 6.0.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("-")).clicked() {
+                    self.operate(Operation::Subtract, self.current.into());
+                }
+            });
+
+            ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                let button_width = calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
+                let button_height = 0.0;
+                if ui.add_sized([button_width, button_height], egui::Button::new("1")).clicked() {
+                    self.operate(Operation::Append, 1.0.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("2")).clicked() {
+                    self.operate(Operation::Append, 2.0.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("3")).clicked() {
+                    self.operate(Operation::Append, 3.0.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("+")).clicked() {
+                    self.operate(Operation::Add, self.current.into());
+                }
+            });
+
+            ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                let button_width = calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
+                let button_height = 0.0;
+                if ui.add_sized([button_width, button_height], egui::Button::new("+/-")).clicked() {
+                    self.operate(Operation::Negate, None);
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("0")).clicked() {
+                    self.operate(Operation::Append, 0.0.into());
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new(".")).clicked() {
+                    self.operate(Operation::Decimal, None);
+                }
+                if ui.add_sized([button_width, button_height], egui::Button::new("=")).clicked() {
+                    self.operate(Operation::Equal, None);
+                }
             });
         });
     }
 }
 
-fn powered_by_egui_and_eframe(ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 0.0;
-        ui.label("Powered by ");
-        ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-        ui.label(" and ");
-        ui.hyperlink_to(
-            "eframe",
-            "https://github.com/emilk/egui/tree/master/crates/eframe",
-        );
-        ui.label(".");
-    });
+fn calculate_button_length(available_width: f32, padding: f32, num_buttons: u8) -> f32 {
+    (available_width - padding * (num_buttons - 1) as f32) / num_buttons as f32
 }
