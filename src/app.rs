@@ -61,7 +61,7 @@ impl Calculator {
     pub fn operate(&mut self, operation: Operation, rhs: Option<f64>) {
         match operation {
             Operation::Add => {
-                self.total = self.total + rhs.unwrap();
+                self.total += rhs.unwrap();
                 self.current = 0.0;
             }
             Operation::Append => {
@@ -89,7 +89,7 @@ impl Calculator {
                 if self.total == 0.0 {
                     self.total = rhs.unwrap();
                 } else {
-                    self.total = self.total - rhs.unwrap();
+                    self.total -= rhs.unwrap();
                 }
                 self.current = 0.0;
             }
@@ -97,7 +97,7 @@ impl Calculator {
                 if self.total == 0.0 {
                     self.total = rhs.unwrap();
                 } else {
-                    self.total = self.total * rhs.unwrap();
+                    self.total *= rhs.unwrap();
                 }
                 self.current = 0.0;
             }
@@ -105,7 +105,7 @@ impl Calculator {
                 if self.total == 0.0 {
                     self.total = rhs.unwrap();
                 } else {
-                    self.total = self.total / rhs.unwrap();
+                    self.total /= rhs.unwrap();
                 }
                 self.current = 0.0;
             }
@@ -118,7 +118,7 @@ impl Calculator {
                 self.current = 0.0;
             }
             Operation::Negate => {
-                self.current = self.current * -1.0;
+                self.current *= -1.0;
             }
             Operation::Equal => {
                 let previous_operation = self.find_last_operation_excluding(vec![
@@ -147,7 +147,7 @@ impl Calculator {
             if excluded_operations.contains(operation) {
                 continue;
             }
-            return Some(operation.clone());
+            return Some(*operation);
         }
         None
     }
