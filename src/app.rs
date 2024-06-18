@@ -68,15 +68,18 @@ impl Calculator {
                 let previous_operation = self.operation_history.clone().pop();
                 match previous_operation {
                     None => {
-                        let appended_numbers = self.current.to_string() + &*rhs.unwrap().to_string();
+                        let appended_numbers =
+                            self.current.to_string() + &*rhs.unwrap().to_string();
                         self.current = appended_numbers.parse().unwrap();
                     }
                     Some(previous_operation) => {
                         if previous_operation == Operation::Decimal && self.current.fract() == 0.0 {
-                            let appended_numbers = self.current.to_string() + "." + &*rhs.unwrap().to_string();
+                            let appended_numbers =
+                                self.current.to_string() + "." + &*rhs.unwrap().to_string();
                             self.current = appended_numbers.parse().unwrap();
                         } else {
-                            let appended_numbers = self.current.to_string() + &*rhs.unwrap().to_string();
+                            let appended_numbers =
+                                self.current.to_string() + &*rhs.unwrap().to_string();
                             self.current = appended_numbers.parse().unwrap();
                         }
                     }
@@ -118,7 +121,11 @@ impl Calculator {
                 self.current = self.current * -1.0;
             }
             Operation::Equal => {
-                let previous_operation = self.find_last_operation_excluding(vec![Operation::Equal, Operation::Append, Operation::Decimal]);
+                let previous_operation = self.find_last_operation_excluding(vec![
+                    Operation::Equal,
+                    Operation::Append,
+                    Operation::Decimal,
+                ]);
                 match previous_operation {
                     None => {}
                     Some(previous_operation) => {
@@ -131,11 +138,14 @@ impl Calculator {
         self.operation_history.push(operation);
     }
 
-    pub fn find_last_operation_excluding(&self, excluded_operations: Vec<Operation>) -> Option<Operation> {
+    pub fn find_last_operation_excluding(
+        &self,
+        excluded_operations: Vec<Operation>,
+    ) -> Option<Operation> {
         let cloned_operation_history = self.operation_history.clone();
         for operation in cloned_operation_history.iter().rev() {
             if excluded_operations.contains(operation) {
-                continue
+                continue;
             }
             return Some(operation.clone());
         }
@@ -168,88 +178,153 @@ impl eframe::App for Calculator {
             });
 
             ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                let button_width = calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
+                let button_width =
+                    calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
                 let button_height = 0.0;
-                if ui.add_sized([button_width, button_height], egui::Button::new("C")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("C"))
+                    .clicked()
+                {
                     self.current = 0.0;
                     self.total = 0.0;
                     //self.previous_operation = Operation::None;
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("sqrt")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("sqrt"))
+                    .clicked()
+                {
                     self.operate(Operation::SquareRoot, self.current.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("pow")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("pow"))
+                    .clicked()
+                {
                     self.operate(Operation::Square, self.current.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("/")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("/"))
+                    .clicked()
+                {
                     self.operate(Operation::Divide, self.current.into());
                 }
             });
 
             ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                let button_width = calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
+                let button_width =
+                    calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
                 let button_height = 0.0;
-                if ui.add_sized([button_width, button_height], egui::Button::new("7")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("7"))
+                    .clicked()
+                {
                     self.operate(Operation::Append, 7.0.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("8")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("8"))
+                    .clicked()
+                {
                     self.operate(Operation::Append, 8.0.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("9")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("9"))
+                    .clicked()
+                {
                     self.operate(Operation::Append, 9.0.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("x")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("x"))
+                    .clicked()
+                {
                     self.operate(Operation::Multiply, self.current.into());
                 }
             });
 
             ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                let button_width = calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
+                let button_width =
+                    calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
                 let button_height = 0.0;
-                if ui.add_sized([button_width, button_height], egui::Button::new("4")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("4"))
+                    .clicked()
+                {
                     self.operate(Operation::Append, 4.0.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("5")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("5"))
+                    .clicked()
+                {
                     self.operate(Operation::Append, 5.0.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("6")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("6"))
+                    .clicked()
+                {
                     self.operate(Operation::Append, 6.0.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("-")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("-"))
+                    .clicked()
+                {
                     self.operate(Operation::Subtract, self.current.into());
                 }
             });
 
             ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                let button_width = calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
+                let button_width =
+                    calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
                 let button_height = 0.0;
-                if ui.add_sized([button_width, button_height], egui::Button::new("1")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("1"))
+                    .clicked()
+                {
                     self.operate(Operation::Append, 1.0.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("2")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("2"))
+                    .clicked()
+                {
                     self.operate(Operation::Append, 2.0.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("3")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("3"))
+                    .clicked()
+                {
                     self.operate(Operation::Append, 3.0.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("+")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("+"))
+                    .clicked()
+                {
                     self.operate(Operation::Add, self.current.into());
                 }
             });
 
             ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
-                let button_width = calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
+                let button_width =
+                    calculate_button_length(ui.available_width(), ui.spacing().item_spacing.x, 4);
                 let button_height = 0.0;
-                if ui.add_sized([button_width, button_height], egui::Button::new("+/-")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("+/-"))
+                    .clicked()
+                {
                     self.operate(Operation::Negate, None);
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("0")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("0"))
+                    .clicked()
+                {
                     self.operate(Operation::Append, 0.0.into());
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new(".")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("."))
+                    .clicked()
+                {
                     self.operate(Operation::Decimal, None);
                 }
-                if ui.add_sized([button_width, button_height], egui::Button::new("=")).clicked() {
+                if ui
+                    .add_sized([button_width, button_height], egui::Button::new("="))
+                    .clicked()
+                {
                     self.operate(Operation::Equal, None);
                 }
             });

@@ -14,7 +14,8 @@ fn main() -> eframe::Result<()> {
                 // NOTE: Adding an icon is optional
                 eframe::icon_data::from_png_bytes(&include_bytes!("../assets/icon-256.png")[..])
                     .expect("Failed to load icon"),
-            ).with_resizable(true),
+            )
+            .with_resizable(true),
         ..Default::default()
     };
     eframe::run_native(
