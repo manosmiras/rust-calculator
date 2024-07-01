@@ -1,6 +1,8 @@
 # Rust Calculator
 A simple calculator written in rust, using [egui](https://github.com/emilk/egui).
 
+![Rust Calculator](preview.png "Rust Calculator")
+
 ## How to run
 There are three ways you can see the app in action:
 - Using [github pages](https://manosmiras.github.io/rust-calculator/)
